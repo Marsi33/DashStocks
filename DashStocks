@@ -1,90 +1,80 @@
-import os
-
-# Let's simulate the creation of a repository and prepare a small example
-# for the user, as we are in a limited environment.
-
-repo_structure = {
-    "README.md": "# DashStocks\nA stock tracking dashboard using Yahoo Finance API.",
-    "package.json": """
-{
-  "name": "dashstocks",
-  "version": "1.0.0",
-  "main": "index.js",
-  "dependencies": {
-    "react": "^18.0.0",
-    "react-dom": "^18.0.0",
-    "tailwindcss": "^3.0.0",
-    "chart.js": "^3.0.0"
-  },
-  "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build"
-  }
-}
-""",
-    "src/index.js": """
-import React from "react";
-import ReactDOM from "react-dom";
-import './index.css';
-import App from './App';
-
-ReactDOM.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-  document.getElementById('root')
-);
-""",
-    "src/App.js": """
+// src/App.jsx
 import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
+import { Line } from 'react-chartjs-2';
+import 'chart.js/auto';
 
-const tickers = ["MSFT", "GOOG", "AMAT", "MSTR", "LVMH", "META", "ROG.SW", "ABT", "JNJ", "ASML"];
+const companies = ["MSFT", "GOOG", "AMAT", "MSTR", "LVMH", "META", "ROG.SW", "ABT", "JNJ", "ASML"];
+
+const fetchMockPrice = async (symbol) => {
+  // Simulación de API para precios (reemplazar con API real más adelante)
+  return { symbol, price: (Math.random() * 1000).toFixed(2) };
+};
 
 const App = () => {
   const [prices, setPrices] = useState({});
 
   useEffect(() => {
     const fetchPrices = async () => {
-      const res = await fetch('https://api.example.com/stocks?tickers=' + tickers.join(','));
-      const data = await res.json();
-      setPrices(data);
+      const results = await Promise.all(companies.map(c => fetchMockPrice(c)));
+      const priceMap = {};
+      results.forEach(res => priceMap[res.symbol] = res.price);
+      setPrices(priceMap);
     };
     fetchPrices();
-    const interval = setInterval(fetchPrices, 30000); // Refresh every 30s
+    const interval = setInterval(fetchPrices, 30000);
     return () => clearInterval(interval);
   }, []);
 
   return (
-    <div className="bg-black text-white p-4">
-      {tickers.map((ticker, index) => (
-        <motion.div key={ticker} className="bg-gray-900 rounded-xl shadow-lg p-4 mb-4">
-          <h2 className="text-xl font-semibold">{ticker}</h2>
-          <div className="text-2xl">
-            ${prices[ticker]?.price ?? '...'} 
+    <div className="min-h-screen bg-gray-900 text-white p-4">
+      <h1 className="text-3xl font-bold mb-4">DashStocks</h1>
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
+        {companies.map((symbol) => (
+          <div key={symbol} className="bg-gray-800 rounded-xl p-4 shadow-md">
+            <h2 className="text-lg font-semibold mb-2">{symbol}</h2>
+            <p className="text-2xl mb-2">${prices[symbol] ?? '...'} USD</p>
+            <div className="h-24">
+              <Line
+                data={{
+                  labels: Array.from({ length: 10 }, (_, i) => i + 1),
+                  datasets: [
+                    {
+                      label: symbol,
+                      data: Array.from({ length: 10 }, () => Math.random() * 1000),
+                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                      borderColor: '#3b82f6',
+                    }
+                  ]
+                }}
+                options={{
+                  responsive: true,
+                  plugins: {
+                    legend: { display: false },
+                  },
+                  scales: {
+                    x: { display: false },
+                    y: { display: false }
+                  }
+                }}
+              />
+            </div>
           </div>
-          <div className="h-32 bg-gray-800 rounded-md">[Graph for {ticker}]</div>
-        </motion.div>
-      ))}
+        ))}
+      </div>
+
+      <div className="mt-10">
+        <h2 className="text-2xl font-bold mb-4">Últimas Noticias</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {[...Array(6)].map((_, idx) => (
+            <div key={idx} className="bg-gray-800 rounded-xl p-4">
+              <h3 className="font-semibold text-lg mb-2">Noticia {idx + 1}</h3>
+              <p className="text-sm text-gray-300">Resumen simulado de una noticia reciente relacionada con alguna de las empresas.</p>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
-}
+};
 
 export default App;
-""",
-    "tailwind.config.js": """
-module.exports = {
-  content: ["./src/**/*.{html,js}"],
-  theme: {
-    extend: {},
-  },
-  plugins: [],
-}
-""",
-}
-
-# Prepare the folder structure and 'files' in a simulated environment
-file_system = {path: content for path, content in repo_structure.items()}
-
-# Show the repo structure ready for deployment
-file_system.keys()  # Display file paths for confirmation
